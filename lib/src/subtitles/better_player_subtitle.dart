@@ -32,10 +32,25 @@ class BetterPlayerSubtitle {
 
   static BetterPlayerSubtitle _handle2LinesSubtitles(List<String> scanner) {
     try {
-      final timeSplit = scanner[0].split(timerSeparator);
-      final start = _stringToDuration(timeSplit[0]);
-      final end = _stringToDuration(timeSplit[1]);
-      final texts = scanner.sublist(1, scanner.length);
+      String timingLine;
+      List<String> texts = [];
+
+      // Case A: [ timing, text ]
+      if (scanner[0].contains(timerSeparator)) {
+        timingLine = scanner[0];
+        texts = scanner.sublist(1);
+      }
+      // Case B: [ id, timing ]
+      else if (scanner[1].contains(timerSeparator)) {
+        timingLine = scanner[1];
+        texts = []; // no text follows
+      } else {
+        throw Exception('No timing info found');
+      }
+
+      final parts = timingLine.split(timerSeparator);
+      final start = _stringToDuration(parts[0].trim());
+      final end   = _stringToDuration(parts[1].trim());
 
       return BetterPlayerSubtitle._(
         index: -1,
