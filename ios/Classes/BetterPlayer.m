@@ -281,8 +281,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 -(void)startStalledCheck{
-    if (_player.currentItem.playbackLikelyToKeepUp ||
-        [self availableDuration] - CMTimeGetSeconds(_player.currentItem.currentTime) > 10.0) {
+    NSTimeInterval bufferAhead = [self availableBufferedDurationFromCurrentTime];
+    if (_player.currentItem.playbackLikelyToKeepUp && bufferAhead > 10.0) {
         [self play];
     } else {
         _stalledCount++;
@@ -300,19 +300,22 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     }
 }
 
-- (NSTimeInterval) availableDuration
-{
-    NSArray *loadedTimeRanges = [[_player currentItem] loadedTimeRanges];
-    if (loadedTimeRanges.count > 0){
-        CMTimeRange timeRange = [[loadedTimeRanges objectAtIndex:0] CMTimeRangeValue];
-        Float64 startSeconds = CMTimeGetSeconds(timeRange.start);
-        Float64 durationSeconds = CMTimeGetSeconds(timeRange.duration);
-        NSTimeInterval result = startSeconds + durationSeconds;
-        return result;
-    } else {
-        return 0;
-    }
+// Returns how many seconds are buffered *after* the currentTime
+- (NSTimeInterval)availableBufferedDurationFromCurrentTime {
+    CMTime currentTime = _player.currentItem.currentTime;
+    Float64 currentSeconds = CMTimeGetSeconds(currentTime);
+    NSArray<NSValue *> *loadedTimeRanges = _player.currentItem.loadedTimeRanges;
 
+    for (NSValue *value in loadedTimeRanges) {
+        CMTimeRange range = [value CMTimeRangeValue];
+        Float64 startSeconds    = CMTimeGetSeconds(range.start);
+        Float64 durationSeconds = CMTimeGetSeconds(range.duration);
+        Float64 endSeconds      = startSeconds + durationSeconds;
+        if (currentSeconds >= startSeconds && currentSeconds <= endSeconds) {
+            return endSeconds - currentSeconds;
+        }
+    }
+    return 0;
 }
 
 - (void)observeValueForKeyPath:(NSString*)path
