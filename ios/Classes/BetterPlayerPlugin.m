@@ -135,7 +135,7 @@ bool _remoteCommandsInitialized = false;
     }
 
     [commandCenter.togglePlayPauseCommand addTargetWithHandler: ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        if (_notificationPlayer != [NSNull null]){
+        if (_notificationPlayer){
             if (_notificationPlayer.isPlaying){
                 _notificationPlayer.eventSink(@{@"event" : @"play"});
             } else {
@@ -146,14 +146,14 @@ bool _remoteCommandsInitialized = false;
     }];
 
     [commandCenter.playCommand addTargetWithHandler: ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        if (_notificationPlayer != [NSNull null]){
+        if (_notificationPlayer){
             _notificationPlayer.eventSink(@{@"event" : @"play"});
         }
         return MPRemoteCommandHandlerStatusSuccess;
     }];
 
     [commandCenter.pauseCommand addTargetWithHandler: ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        if (_notificationPlayer != [NSNull null]){
+        if (_notificationPlayer){
             _notificationPlayer.eventSink(@{@"event" : @"pause"});
         }
         return MPRemoteCommandHandlerStatusSuccess;
@@ -163,7 +163,7 @@ bool _remoteCommandsInitialized = false;
 
     if (@available(iOS 9.1, *)) {
         [commandCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-            if (_notificationPlayer != [NSNull null]){
+            if (_notificationPlayer){
                 MPChangePlaybackPositionCommandEvent * playbackEvent = (MPChangePlaybackRateCommandEvent * ) event;
                 CMTime time = CMTimeMake(playbackEvent.positionTime, 1);
                 int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
@@ -259,6 +259,13 @@ bool _remoteCommandsInitialized = false;
         _timeObserverId = nil;
     }
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo =  @{};
+    MPRemoteCommandCenter *center = [MPRemoteCommandCenter sharedCommandCenter];
+    [center.playCommand removeTarget:self];
+    [center.pauseCommand removeTarget:self];
+    [center.togglePlayPauseCommand removeTarget:self];
+    if (@available(iOS 9.1, *)) {
+        [center.changePlaybackPositionCommand removeTarget:self];
+    }
 }
 
 - (void) stopOtherUpdateListener: (BetterPlayer*) player{
