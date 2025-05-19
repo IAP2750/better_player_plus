@@ -237,7 +237,9 @@ bool _remoteCommandsInitialized = false;
 
 - (void) setupUpdateListener:(BetterPlayer*)player,NSString* title, NSString* author,NSString* imageUrl  {
     id _timeObserverId = [player.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 1) queue:NULL usingBlock:^(CMTime time){
-        [self setupRemoteCommandNotification:player, title, author, imageUrl];
+        if (player == _notificationPlayer) {
+            [self setupRemoteCommandNotification:player, title, author, imageUrl];
+        }
     }];
 
     NSString* key =  [self getTextureId:player];
@@ -304,6 +306,8 @@ bool _remoteCommandsInitialized = false;
         BetterPlayer* player = _players[@(textureId)];
         if ([@"setDataSource" isEqualToString:call.method]) {
             [player clear];
+            [self disposeNotificationData:player];
+            [self setRemoteCommandsNotificationNotActive];
             // This call will clear cached frame because we will return transparent frame
 
             NSDictionary* dataSource = argsMap[@"dataSource"];
